@@ -1,0 +1,90 @@
+---
+import { getImage } from 'astro:assets';
+import { profile, publications, tr, type Lang } from '../data/site';
+import { ui, home } from '../i18n';
+import { icons } from '../icons';
+import { postIndex } from '../lib/posts';
+import { paperImage } from '../lib/images';
+
+interface Props {
+  lang: Lang;
+  alt: string;
+}
+
+const { lang, alt } = Astro.props;
+const t = ui[lang];
+const zh = lang === 'zh';
+const base = home(lang);
+
+const section = (id: string, title: string, sub: string, keys: string[]) => ({
+  group: 'nav',
+  title,
+  sub,
+  icon: 'hash',
+  url: `${base}#${id}`,
+  keys,
+});
+
+const thumbs = await Promise.all(publications.map((p) => getImage({ src: paperImage(p.img), width: 64, format: 'webp' })));
+const posts = await postIndex(lang);
+
+const items = [
+  section('research', t.research, zh ? `${publications.length} 篇论文、技术报告与模型卡` : `${publications.length} papers, reports & model cards`, ['G', 'R']),
+  ...(posts.length ? [section('writing', t.writing, zh ? '博客文章' : 'Blog posts', ['G', 'W'])] : []),
+  section('experience', t.experience, zh ? '实习与教育' : 'Internships & education', ['G', 'E']),
+  section('talks', t.talks, zh ? '报告与研讨会组织' : 'Talks & workshops', ['G', 'T']),
+  ...posts.map(({ post, url }) => ({ group: 'writing', title: post.data.title, sub: post.data.subtitle ?? '', icon: 'doc', url })),
+  ...publications.map((p, i) => ({
+    group: 'papers',
+    title: p.title,
+    sub: `${p.venue}${p.award ? ` ${p.award}` : ''} ${p.year} · ${p.authors}`,
+    thumb: thumbs[i].src,
+    url: p.url,
+    external: true,
+    lead: !!p.lead,
+    keywords: `${p.authors} ${p.venue} ${p.year} ${tr(p.note, 'en')} ${tr(p.note, 'zh')}`,
+  })),
+  ...profile.links.map((l) => ({ group: 'links', title: tr(l.label, lang), sub: l.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\?.*$/, ''), icon: l.id, url: l.url, external: true })),
+  { group: 'actions', title: zh ? '切换到英文 · English' : 'Switch to Chinese · 中文', icon: 'globe', url: alt, action: 'lang', keys: ['L'], keywords: 'language 语言 中文 english' },
+  { group: 'actions', title: zh ? '切换深色模式' : 'Toggle dark mode', icon: 'moon', action: 'theme', keys: ['D'], keywords: 'theme dark light 主题 深色' },
+  { group: 'actions', title: zh ? '复制本页链接' : 'Copy link to this page', icon: 'copy', action: 'copy' },
+];
+
+const strings = {
+  groups: {
+    nav: zh ? '导航' : 'Navigate',
+    writing: t.writing,
+    papers: zh ? '论文' : 'Papers',
+    links: zh ? '链接' : 'Links',
+    actions: zh ? '操作' : 'Actions',
+  },
+  placeholder: zh ? '搜索论文、文章、链接，或执行命令…' : 'Search papers, posts, links… or run a command',
+  empty: zh ? '没有找到' : 'No results for',
+  copied: zh ? '链接已复制' : 'Link copied',
+  copyFailed: zh ? '复制失败' : 'Copy failed',
+};
+
+const payload = JSON.stringify({ items, strings, icons: { hash: icons.hash, doc: icons.doc, globe: icons.globe, moon: icons.moon, copy: icons.copy, arrow: icons.arrow, scholar: icons.scholar, github: icons.github, zhihu: icons.zhihu } }).replace(/</g, '\\u003c');
+---
+
+<div class="cmdk" hidden>
+  <div class="cmdk-backdrop"></div>
+  <div class="cmdk-panel" role="dialog" aria-modal="true" aria-label={t.search}>
+    <label class="cmdk-input">
+      <Fragment set:html={icons.search} />
+      <input id="cmdk-q" type="text" autocomplete="off" spellcheck="false" placeholder={strings.placeholder} role="combobox" aria-expanded="true" aria-controls="cmdk-list" />
+      <kbd>esc</kbd>
+    </label>
+    <ul class="cmdk-list" id="cmdk-list" role="listbox"></ul>
+    <div class="cmdk-foot">
+      <span><kbd>↑</kbd><kbd>↓</kbd> {zh ? '选择' : 'navigate'}</span>
+      <span><kbd>↵</kbd> {zh ? '打开' : 'open'}</span>
+      <span class="sp"><kbd>⌘</kbd><kbd>K</kbd></span>
+    </div>
+  </div>
+</div>
+<div class="toast" role="status"></div>
+<script is:inline type="application/json" id="cmdk-data" set:html={payload} />
+<script>
+  import '../scripts/cmdk';
+</script>

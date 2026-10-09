@@ -1,0 +1,115 @@
+---
+import '@fontsource-variable/geist';
+import '@fontsource-variable/geist-mono';
+import '../styles/global.css';
+import CommandMenu from '../components/CommandMenu.astro';
+import { profile, type Lang } from '../data/site';
+import { ui, home } from '../i18n';
+import { icons } from '../icons';
+
+interface Props {
+  lang: Lang;
+  /** URL of this page in the other language. */
+  alt: string;
+  title?: string;
+  description?: string;
+  isHome?: boolean;
+}
+
+const { lang, alt, title, description, isHome = false } = Astro.props;
+const t = ui[lang];
+const fullTitle = title ? `${title} · ${profile.name}` : `${profile.name} · ${t.metaTitle}`;
+const desc = description ?? t.metaDescription;
+const here = new URL(Astro.url.pathname, Astro.site);
+const there = new URL(alt, Astro.site);
+const [en, zh] = lang === 'en' ? [here, there] : [there, here];
+const otherLang = lang === 'zh' ? 'en' : 'zh';
+---
+
+<!doctype html>
+<html lang={lang === 'zh' ? 'zh-CN' : 'en'}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={desc} />
+    <link rel="canonical" href={here} />
+    <link rel="alternate" hreflang="en" href={en} />
+    <link rel="alternate" hreflang="zh-CN" href={zh} />
+    <link rel="alternate" hreflang="x-default" href={en} />
+    <link rel="alternate" type="application/rss+xml" title={profile.name} href={lang === 'zh' ? '/zh/rss.xml' : '/rss.xml'} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta property="og:type" content={isHome ? 'website' : 'article'} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={desc} />
+    <meta property="og:url" content={here} />
+    <meta property="og:image" content={new URL('/og.png', Astro.site)} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
+    <script is:inline>
+      (() => {
+        const root = document.documentElement;
+        root.classList.add('js');
+        let theme = null;
+        let lang = null;
+        try {
+          theme = localStorage.getItem('theme');
+          lang = localStorage.getItem('lang');
+        } catch {}
+        root.dataset.theme = theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        const prefersZh = (lang || (/^zh\b/i.test(navigator.language || '') ? 'zh' : 'en')) === 'zh';
+        if (prefersZh && location.pathname === '/') location.replace('/zh/' + location.hash);
+        document.addEventListener('click', (e) => {
+          const a = e.target.closest && e.target.closest('[data-lang-switch]');
+          if (a) {
+            try {
+              localStorage.setItem('lang', a.dataset.langSwitch);
+            } catch {}
+          }
+        });
+      })();
+    </script>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="top">
+        {
+          !isHome && (
+            <a class="home" href={home(lang)}>
+              <Fragment set:html={icons.back} />
+              {t.back}
+            </a>
+          )
+        }
+        <div class="controls">
+          <button class="btn" type="button" data-cmdk aria-label={t.search}>
+            <Fragment set:html={icons.search} />
+            <span class="label">{t.search}</span>
+            <kbd>⌘K</kbd>
+          </button>
+          <a class="btn lang" href={alt} hreflang={otherLang === 'zh' ? 'zh-CN' : 'en'} data-lang-switch={otherLang} aria-label={t.switchLabel}>{t.switchTo}</a>
+          <button class="btn icon theme" type="button" data-theme-toggle aria-label={t.theme}>
+            <Fragment set:html={icons.moon} />
+            <Fragment set:html={icons.sun} />
+          </button>
+        </div>
+      </header>
+      <slot />
+      <footer class="foot">
+        <span>© {new Date().getFullYear()} {profile.name}</span>
+        <span>
+          <kbd>⌘</kbd> <kbd>K</kbd> {t.shortcuts}
+        </span>
+        <span class="links">
+          <a href={lang === 'zh' ? '/zh/rss.xml' : '/rss.xml'}>RSS</a>
+          <a href="https://github.com/chenjoya/chenjoya.github.io">Source</a>
+        </span>
+      </footer>
+    </div>
+    <CommandMenu lang={lang} alt={alt} />
+    <script>
+      import '../scripts/theme';
+    </script>
+  </body>
+</html>

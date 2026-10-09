@@ -1,0 +1,130 @@
+---
+import { Image } from 'astro:assets';
+import { profile, tr, type Lang } from '../data/site';
+import { ui } from '../i18n';
+import { actor, end, lineHTML, lines, moves } from '../lib/dance';
+import plain from '../assets/doubao-plain.png';
+import dressed from '../assets/doubao-dressed.png';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = ui[lang];
+
+// The timeline shows frames 0..SPAN; keep in sync with scripts/focus.ts.
+const SPAN = 155;
+const x = (f: number) => 3 + (f / SPAN) * 94;
+const at = (f: number) => `${x(f).toFixed(2)}%`;
+const ticks = Array.from({ length: SPAN / 5 + 1 }, (_, i) => i * 5);
+// The action is keyed one frame past the end, where the loop is back at frame 1.
+const keys = Array.from({ length: end + 1 }, (_, i) => i + 1);
+const room = (i: number) => `${((moves[i + 1] ? x(moves[i + 1].frame) : 100) - x(moves[i].frame)).toFixed(2)}%`;
+
+const ico = {
+  text: '<svg viewBox="0 0 16 16"><path d="M4.5 2.5h5L12 5v8.5H4.5z" fill="none" stroke="currentColor" stroke-linejoin="round"/><path d="M6.5 7.5h3.5M6.5 9.5h3.5M6.5 11.5h2.5" stroke="currentColor"/></svg>',
+  view: '<svg viewBox="0 0 16 16"><path d="m8 2.6 5 2.6v5.6L8 13.4l-5-2.6V5.2z" fill="none" stroke="currentColor" stroke-linejoin="round"/><path d="m3 5.2 5 2.6 5-2.6M8 7.8v5.6" fill="none" stroke="currentColor" stroke-linejoin="round"/></svg>',
+  play: '<svg viewBox="0 0 16 16"><path d="M5.5 3.8v8.4l6.6-4.2z" fill="currentColor"/></svg>',
+  down: '<svg viewBox="0 0 16 16"><path d="m5.5 6.8 2.5 2.5 2.5-2.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  object: '<svg viewBox="0 0 16 16"><path d="m8 3 4.5 2.4v5.2L8 13l-4.5-2.4V5.4z" fill="currentColor" opacity=".35"/><path d="m8 3 4.5 2.4v5.2L8 13l-4.5-2.4V5.4z" fill="none" stroke="currentColor" stroke-linejoin="round"/></svg>',
+  wire: '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5" fill="none" stroke="currentColor"/><ellipse cx="8" cy="8" rx="2.2" ry="5" fill="none" stroke="currentColor"/><path d="M3 8h10" stroke="currentColor"/></svg>',
+  solid: '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.2" fill="currentColor"/></svg>',
+  material: '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5" fill="none" stroke="currentColor"/><path d="M8 3a5 5 0 0 1 0 10z" fill="currentColor"/></svg>',
+  render: '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5" fill="none" stroke="currentColor"/><circle cx="6.4" cy="6.4" r="2" fill="currentColor"/></svg>',
+};
+// Cycles render of the looped dance (frames 1..end at 24 fps), reframed by previews/tools/doubao_shot.py.
+const SHOT = '/blender/doubao-dance.mp4';
+// Navigation gizmo for "Camera | Dance": looking along +Y, pitched 9° down.
+const az = 0;
+const el = (9 * Math.PI) / 180;
+const screen = {
+  x: [Math.cos(az), -Math.sin(el) * Math.sin(az), Math.cos(el) * Math.sin(az)],
+  y: [Math.sin(az), Math.sin(el) * Math.cos(az), -Math.cos(el) * Math.cos(az)],
+  z: [0, Math.cos(el), Math.sin(el)],
+};
+const R = 19;
+const dots = (['x', 'y', 'z'] as const)
+  .flatMap((a) => [1, -1].map((s) => ({ a, s, x: screen[a][0] * R * s, y: -screen[a][1] * R * s, z: screen[a][2] * s })))
+  .sort((p, q) => p.z - q.z);
+const f2 = (n: number) => n.toFixed(2);
+---
+
+<div class="focus">
+  <div class="focus-text">
+    <p class="eyebrow"><span class="dot"></span>{t.now}</p>
+    <p class="focus-title">{tr(profile.now.title, lang)}</p>
+  </div>
+
+  <figure class="bl" aria-hidden="true" data-mode="plain">
+    <div class="bl-area bl-text">
+      <div class="bl-head">
+        <span class="bl-btn" set:html={ico.text} />
+        <span class="bl-field">dance.py</span>
+        <span class="bl-sp"></span>
+        <span class="bl-btn bl-run" title="Run Script" set:html={ico.play} />
+      </div>
+      <div class="bl-editor">
+        <ol class="bl-gutter">{lines.map((_, i) => <li>{i + 1}</li>)}</ol>
+        <pre class="bl-code"><code>{lines.map((l) => <span class="ln" set:html={lineHTML(l) || ' '} />)}</code></pre>
+      </div>
+    </div>
+
+    <div class="bl-area bl-view">
+      <Image class="bl-still" src={plain} widths={[360, 720]} sizes="360px" quality={92} alt="" loading="eager" />
+      <Image class="bl-still bl-dressed" src={dressed} widths={[360, 720]} sizes="360px" quality={92} alt="" loading="eager" />
+      <video class="bl-video" src={SHOT} width="720" height="680" muted playsinline loop preload="none"></video>
+      <div class="bl-head bl-over">
+        <span class="bl-btn" set:html={ico.view} />
+        <span class="bl-menu"><Fragment set:html={ico.object} />Object Mode<Fragment set:html={ico.down} /></span>
+        <span class="bl-sp"></span>
+        <span class="bl-seg">
+          <span set:html={ico.wire} /><span set:html={ico.solid} /><span set:html={ico.material} /><span class="on" set:html={ico.render} />
+        </span>
+      </div>
+      <div class="bl-ov">
+        <span>Camera Perspective</span>
+        <span>(<b class="bl-fn">1</b>) Collection | {actor}</span>
+      </div>
+      <svg class="bl-gizmo" viewBox="-30 -30 60 60">
+        {dots.filter((d) => d.s > 0).map((d) => <line class={`gz-${d.a}`} x1="0" y1="0" x2={f2(d.x * 0.72)} y2={f2(d.y * 0.72)} />)}
+        {
+          dots.map((d) => (
+            <g class={`gz gz-${d.a}${d.s < 0 ? ' neg' : ''}`} transform={`translate(${f2(d.x)} ${f2(d.y)})`}>
+              <circle r={d.s > 0 ? 6.6 : 5.6} />
+              {d.s > 0 && <text dy="2.6">{d.a.toUpperCase()}</text>}
+            </g>
+          ))
+        }
+      </svg>
+    </div>
+
+    <div class="bl-area bl-time">
+      <div class="bl-scrub">
+        {ticks.map((f) => <i style={`left:${at(f)}`} class={f % 10 ? '' : 'lb'} data-f={f % 10 ? undefined : f} />)}
+      </div>
+      <div class="bl-range pre" style={`width:${at(1)}`}></div>
+      <div class="bl-range post" style={`left:${at(end)}`}></div>
+      <div class="bl-keys">{keys.map((f) => <i style={`left:${at(f)}`} />)}</div>
+      <div class="bl-marks">
+        {
+          moves.map((m, i) => (
+            <b data-f={m.frame} style={`left:${at(m.frame)};width:${room(i)}`}>
+              <span>{m.name}</span>
+            </b>
+          ))
+        }
+      </div>
+      <div class="bl-ph" style={`left:${at(1)}`}><span>1</span></div>
+    </div>
+  </figure>
+
+  <p class="before">
+    <span class="eyebrow">{t.before}</span>
+    <span>{profile.before[lang].map((x, i) => <>{i > 0 && ' · '}<span class="nw">{x}</span></>)}</span>
+  </p>
+</div>
+
+<script>
+  import '../scripts/focus';
+</script>

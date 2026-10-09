@@ -1,0 +1,180 @@
+---
+import { Image } from 'astro:assets';
+import Base from '../layouts/Base.astro';
+import Focus from './Focus.astro';
+import Publications from './Publications.astro';
+import portrait from '../assets/portrait.jpg';
+import { education, experience, honors, profile, talks, tr, type Lang } from '../data/site';
+import { ui, month } from '../i18n';
+import { icons } from '../icons';
+import { postIndex } from '../lib/posts';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = ui[lang];
+const posts = await postIndex(lang);
+const n2 = (n: number) => String(n).padStart(2, '0');
+---
+
+<Base lang={lang} alt={lang === 'zh' ? '/' : '/zh/'} isHome>
+  <main>
+    <section class="intro" style="margin-top: 0">
+      <div class="id">
+        <Image class="avatar" src={portrait} width={96} height={96} densities={[1.5, 2, 3]} alt={profile.name} loading="eager" fetchpriority="high" />
+        <div class="id-text">
+          <h1>{profile.name}<span lang="zh-CN">{profile.nameZh}</span></h1>
+          <p class="role">{profile.role[lang].map((line) => <span>{line}</span>)}</p>
+          <nav class="social" aria-label="Links">
+            {
+              profile.links.map((l) => (
+                <a href={l.url}>
+                  <Fragment set:html={icons[l.id]} />
+                  {tr(l.label, lang)}
+                  <span class="arr" set:html={icons.arrow} />
+                </a>
+              ))
+            }
+          </nav>
+        </div>
+      </div>
+      <Focus lang={lang} />
+    </section>
+
+    <Publications lang={lang} />
+
+    {
+      posts.length > 0 && (
+        <section id="writing">
+          <div class="sec-h">
+            <h2>
+              {t.writing}
+              <span class="n">{n2(posts.length)}</span>
+            </h2>
+            <a class="aside" href={lang === 'zh' ? '/zh/rss.xml' : '/rss.xml'}>
+              <Fragment set:html={icons.rss} />
+              RSS
+            </a>
+          </div>
+          <ul class="list">
+            {posts.map(({ post, url, lang: postLang }) => (
+              <li>
+                <a class="row post-row" href={url}>
+                  <span class="k">{post.data.date.toISOString().slice(0, 10).replaceAll('-', '.')}</span>
+                  <span class="t">
+                    {post.data.title}
+                    {post.data.draft && <span class="badge">draft</span>}
+                    {postLang !== lang && <span class="badge">{postLang === 'zh' ? '中文' : 'EN'}</span>}
+                  </span>
+                  <span class="x" />
+                  {post.data.subtitle && <span class="s">{post.data.subtitle}</span>}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+
+    <section id="experience">
+      <div class="sec-h">
+        <h2>{t.experience}</h2>
+      </div>
+      <ul class="list">
+        {
+          experience.map((e) => (
+            <li>
+              <div class="row">
+                <span class="k">{e.years}</span>
+                <span class="t">
+                  {tr(e.org, lang)} <span class="sub">· {tr(e.role, lang)}</span>
+                </span>
+                <span class="x">
+                  {e.with && (
+                    <a href={e.with.url}>
+                      {t.with} {e.with.name}
+                    </a>
+                  )}
+                </span>
+              </div>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section id="education">
+      <div class="sec-h">
+        <h2>{t.education}</h2>
+      </div>
+      <ul class="list">
+        {
+          education.map((ed) => (
+            <li>
+              <div class="row">
+                <span class="k">{tr(ed.degree, lang)}</span>
+                <span class="t">
+                  <a href={ed.url}>{tr(ed.school, lang)}</a>
+                </span>
+                <span class="x">{ed.with && `${t.with} ${tr(ed.with, lang)}`}</span>
+              </div>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section id="talks">
+      <div class="sec-h">
+        <h2>{t.talks}</h2>
+      </div>
+      <ul class="list">
+        {
+          talks.map((x) => (
+            <li>
+              <div class="row">
+                <span class="k">{month(x.date)}</span>
+                <span class="t">
+                  {x.url ? <a href={x.url}>{x.title}</a> : x.title} <span class="sub">· {tr(x.role, lang)} · {tr(x.venue, lang)}</span>
+                </span>
+                <span class="x">
+                  {x.extra && (
+                    <a href={x.extra.url}>
+                      {tr(x.extra.label, lang)}
+                      <Fragment set:html={icons.arrow} />
+                    </a>
+                  )}
+                </span>
+              </div>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section id="honors">
+      <div class="sec-h">
+        <h2>{t.honors}</h2>
+      </div>
+      <ul class="list">
+        {
+          honors.map((h) => (
+            <li>
+              <div class="row">
+                <span class="k">{month(h.date)}</span>
+                <span class="t">{h.url ? <a href={h.url}>{tr(h.title, lang)}</a> : tr(h.title, lang)}</span>
+                <span class="x" />
+              </div>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+  </main>
+</Base>
+
+<script>
+  import '../scripts/glide';
+</script>

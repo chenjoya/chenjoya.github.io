@@ -1,0 +1,65 @@
+---
+import 'katex/dist/katex.min.css';
+import { render } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import type { Lang } from '../data/site';
+import { ui, home, fullDate } from '../i18n';
+import { counterpart, postLang, readingMinutes, type Post } from '../lib/posts';
+
+interface Props {
+  post: Post;
+  lang: Lang;
+}
+
+const { post, lang } = Astro.props;
+const t = ui[lang];
+const { Content, headings } = await render(post);
+const toc = headings.filter((h) => (h.depth === 2 || h.depth === 3) && h.slug !== 'footnote-label');
+const alt = (await counterpart(post)) ?? home(lang === 'zh' ? 'en' : 'zh');
+const { title, subtitle, date, tags } = post.data;
+const fallback = postLang(post) !== lang;
+---
+
+<Base lang={lang} alt={alt} title={title} description={subtitle}>
+  <main>
+    <article lang={postLang(post) === 'zh' ? 'zh-CN' : 'en'}>
+      <header class="post-head">
+        <div class="meta">
+          <time datetime={date.toISOString()}>{fullDate(date, lang)}</time>
+          <span>{readingMinutes(post.body)} {t.minRead}</span>
+          {tags.length > 0 && <span>{tags.map((x) => `#${x}`).join(' ')}</span>}
+        </div>
+        <h1>{title}</h1>
+        {subtitle && <p class="dek">{subtitle}</p>}
+        {fallback && <p class="notice">{t.otherLanguageOnly}</p>}
+      </header>
+      <div class="prose">
+        <Content />
+      </div>
+      <footer class="post-foot">
+        <a href={`${home(lang)}#writing`}>← {t.allWriting}</a>
+      </footer>
+    </article>
+  </main>
+  {
+    toc.length > 1 && (
+      <nav class="toc" aria-label={t.onThisPage}>
+        <p>{t.onThisPage}</p>
+        <ol>
+          <li class="ind" aria-hidden="true" />
+          {toc.map((h) => (
+            <li>
+              <a href={`#${h.slug}`} style={h.depth === 3 ? 'padding-left: 12px' : undefined}>
+                {h.text}
+              </a>
+            </li>
+          ))}
+        </ol>
+      </nav>
+    )
+  }
+</Base>
+
+<script>
+  import '../scripts/post';
+</script>
