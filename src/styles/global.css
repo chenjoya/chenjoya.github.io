@@ -315,6 +315,11 @@ kbd {
   width: max-content;
 }
 
+.focus-row strong {
+  color: var(--fg);
+  font-weight: 600;
+}
+
 .focus-row .nw {
   white-space: nowrap;
 }
