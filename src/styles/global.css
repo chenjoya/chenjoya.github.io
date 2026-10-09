@@ -292,14 +292,37 @@ kbd {
   background: linear-gradient(180deg, var(--bg), var(--bg-2));
 }
 
-.focus-text {
-  padding: 22px 24px 18px;
+.focus-row {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--fg-2);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+}
+
+.focus-row.now {
+  padding: 15px 24px 14px;
+}
+
+.focus-row.before {
+  padding: 14px 24px 15px;
+}
+
+/* On a narrow card the text moves under the label as a whole rather than breaking inside it. */
+.focus-row > :last-child {
+  width: max-content;
+}
+
+.focus-row .nw {
+  white-space: nowrap;
 }
 
 .eyebrow {
-  margin: 0 0 10px;
+  flex: none;
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   gap: 8px;
   font-family: var(--mono);
   font-size: 11.5px;
@@ -309,6 +332,7 @@ kbd {
 }
 
 .eyebrow .dot {
+  align-self: center;
   width: 7px;
   height: 7px;
   border-radius: 50%;
@@ -324,39 +348,6 @@ kbd {
   100% {
     box-shadow: 0 0 0 7px transparent;
   }
-}
-
-.focus-title {
-  margin: 0;
-  font-size: 26px;
-  line-height: 1.2;
-  font-weight: 600;
-  letter-spacing: -0.025em;
-}
-
-.before {
-  margin: 0;
-  padding: 14px 24px 15px;
-  font-size: 13.5px;
-  color: var(--fg-2);
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 14px;
-}
-
-.before .eyebrow {
-  margin: 0;
-  flex: none;
-}
-
-/* On a narrow card the list moves under the label as a whole rather than breaking between items. */
-.before > :last-child {
-  width: max-content;
-}
-
-.before .nw {
-  white-space: nowrap;
 }
 
 /* Blender window (colors from Blender 5.2's default theme) */
@@ -2056,12 +2047,12 @@ a.row:hover .t,
     font-size: 13.5px;
   }
 
-  .focus-text {
-    padding: 20px 20px 16px;
+  .focus-row.now {
+    padding: 14px 20px 13px;
   }
 
-  .focus-title {
-    font-size: 22px;
+  .focus-row.before {
+    padding: 13px 20px 14px;
   }
 
   .bl {
@@ -2100,10 +2091,6 @@ a.row:hover .t,
 
   .bl-code {
     scroll-behavior: smooth;
-  }
-
-  .before {
-    padding: 13px 20px 14px;
   }
 
   .sec-h {

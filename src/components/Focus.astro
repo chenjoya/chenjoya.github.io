@@ -51,10 +51,10 @@ const f2 = (n: number) => n.toFixed(2);
 ---
 
 <div class="focus">
-  <div class="focus-text">
-    <p class="eyebrow"><span class="dot"></span>{t.now}</p>
-    <p class="focus-title">{tr(profile.now.title, lang)}</p>
-  </div>
+  <p class="focus-row now">
+    <span class="eyebrow"><span class="dot"></span>{t.now}</span>
+    <span>{tr(profile.now.title, lang)}</span>
+  </p>
 
   <figure class="bl" aria-hidden="true" data-mode="plain">
     <div class="bl-area bl-text">
@@ -119,7 +119,7 @@ const f2 = (n: number) => n.toFixed(2);
     </div>
   </figure>
 
-  <p class="before">
+  <p class="focus-row before">
     <span class="eyebrow">{t.before}</span>
     <span>{profile.before[lang].map((x, i) => <>{i > 0 && ' · '}<span class="nw">{x}</span></>)}</span>
   </p>
