@@ -52,22 +52,10 @@ const otherLang = lang === 'zh' ? 'en' : 'zh';
         const root = document.documentElement;
         root.classList.add('js');
         let theme = null;
-        let lang = null;
         try {
           theme = localStorage.getItem('theme');
-          lang = localStorage.getItem('lang');
         } catch {}
         root.dataset.theme = theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-        const prefersZh = (lang || (/^zh\b/i.test(navigator.language || '') ? 'zh' : 'en')) === 'zh';
-        if (prefersZh && location.pathname === '/') location.replace('/zh/' + location.hash);
-        document.addEventListener('click', (e) => {
-          const a = e.target.closest && e.target.closest('[data-lang-switch]');
-          if (a) {
-            try {
-              localStorage.setItem('lang', a.dataset.langSwitch);
-            } catch {}
-          }
-        });
       })();
     </script>
   </head>
